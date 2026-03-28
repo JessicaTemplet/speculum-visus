@@ -4,7 +4,7 @@ import { bootstrapCameraKit, createMediaStreamSource, Transform2D } from '@snap/
 // Move these to a .env file: VITE_API_TOKEN and VITE_GROUP_ID
 // Then reference them as import.meta.env.VITE_API_TOKEN etc.
 const API_TOKEN = import.meta.env.VITE_API_TOKEN;
-const GROUP_ID  = import.meta.env.VITE_GROUP_ID || '9f282636-2d8c-4dc1-b600-b5fcfafa7d27';
+const GROUP_ID  = import.meta.env.VITE_GROUP_ID;
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
 const canvas      = document.getElementById('snap-canvas');
@@ -189,12 +189,12 @@ toggleBtn.addEventListener('click', () => togglePicker());
 const overlay    = document.getElementById('consent-overlay');
 const consentBtn = document.getElementById('consent-btn');
 
-consentBtn.addEventListener('click', () => {
+consentBtn.addEventListener('click', async () => {
     consentBtn.disabled = true;
     consentBtn.textContent = 'Starting…';
     overlay.classList.add('fade-out');
     // transitionend is unreliable across browsers — use a plain timeout instead
-    setTimeout(() => overlay.remove(), 500);
+    setTimeout(async () => overlay.remove(), 500);
     init();
 });
 

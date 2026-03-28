@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="description" content="Speculum Visus — a personal browser-based lens experience built with Snap Camera Kit.">
+  <title>Speculum Visus</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ── Consent overlay ─────────────────────────────────── */
+    #consent-overlay {
+      position: fixed;
+      inset: 0;
+      background: #0a0a0a;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 24px;
+      transition: opacity 0.4s ease;
+    }
+
+    #consent-overlay.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #consent-card {
+      max-width: 360px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      text-align: center;
+      color: #fff;
+    }
+
+    .app-logo {
+      width: 72px;
+      height: 72px;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .app-logo svg {
+      width: 40px;
+      height: 40px;
+    }
+
+    #consent-card h1 {
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.6px;
+      line-height: 1;
+    }
+
+    #consent-card .tagline {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.55;
+      max-width: 300px;
+    }
+
+    .perm-list {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .perm-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #111;
+      border: 1px solid #1e1e1e;
+      border-radius: 12px;
+      padding: 13px 16px;
+      text-align: left;
+    }
+
+    .perm-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+      width: 28px;
+      text-align: center;
+    }
+
+    .perm-item span:last-child {
+      font-size: 13px;
+      color: #aaa;
+      line-height: 1.4;
+    }
+
+    .terms-text {
+      font-size: 12px;
+      color: #444;
+      line-height: 1.65;
+    }
+
+    .terms-text a {
+      color: #666;
+      text-decoration: underline;
+      text-decoration-color: #333;
+      transition: color 0.15s;
+    }
+
+    .terms-text a:hover { color: #aaa; }
+
+    #consent-btn {
+      width: 100%;
+      padding: 15px;
+      background: #fff;
+      color: #000;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: -0.2px;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    #consent-btn:hover { background: #e8e8e8; }
+    #consent-btn:active { transform: scale(0.98); }
+
+    /* ── Lens Picker Strip ───────────────────────────────── */
+    #lens-picker {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px 16px 16px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.75));
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    #lens-picker::-webkit-scrollbar { display: none; }
+
+    #lens-picker.hidden {
+      opacity: 0;
+      transform: translateY(100%);
+      pointer-events: none;
+    }
+
+    .lens-thumb {
+      flex-shrink: 0;
+      width: 60px;
+      height: 60px;
+      border-radius: 14px;
+      border: 2.5px solid transparent;
+      background: #222;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .lens-thumb:hover { transform: scale(1.1); }
+
+    .lens-thumb.active {
+      border-color: #e0e0e0;
+      transform: scale(1.15);
+    }
+
+    .lens-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .lens-thumb .fallback {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      background: #1a1a1a;
+    }
+
+    .lens-thumb .fallback span {
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .lens-thumb .fallback small {
+      font-size: 8px;
+      color: #aaa;
+      text-align: center;
+      padding: 0 4px;
+      max-width: 56px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    /* ── Clear button ────────────────────────────────────── */
+    #clear-lens {
+      flex-shrink: 0;
+      width: 60px;
+      height: 60px;
+      border-radius: 14px;
+      border: 2.5px solid #444;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      color: #fff;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+
+    #clear-lens:hover { transform: scale(1.1); border-color: #888; }
+    #clear-lens.active { border-color: #e0e0e0; transform: scale(1.15); }
+
+    /* ── Toggle button ───────────────────────────────────── */
+    #ui-toggle {
+      position: fixed;
+      bottom: 16px;
+      right: 16px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(6px);
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      transition: opacity 0.3s ease, background 0.2s ease;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #ui-toggle:hover { background: rgba(255,255,255,0.25); }
+    #ui-toggle.picker-hidden { opacity: 0.4; }
+
+    /* ── Status overlay ──────────────────────────────────── */
+    #status {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font-size: 15px;
+      text-align: center;
+      pointer-events: none;
+      line-height: 1.6;
+    }
+
+    #status.hidden { display: none; }
+
+    /* ── OBS help button ─────────────────────────────────── */
+    #obs-help-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(6px);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease;
+    }
+
+    #obs-help-btn:hover { background: rgba(255,255,255,0.25); }
+
+    /* ── OBS help overlay ────────────────────────────────── */
+    #obs-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 24px;
+    }
+
+    #obs-overlay.hidden { display: none; }
+
+    #obs-card {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 20px;
+      padding: 28px;
+      max-width: 420px;
+      width: 100%;
+      color: #fff;
+    }
+
+    #obs-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    #obs-card-header h2 {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+
+    #obs-close {
+      background: #1e1e1e;
+      border: none;
+      color: #888;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    #obs-close:hover { color: #fff; background: #2a2a2a; }
+
+    #obs-card .subtitle {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    .obs-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .obs-step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .obs-step-num {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #1e1e1e;
+      border: 1px solid #2a2a2a;
+      font-size: 12px;
+      font-weight: 600;
+      color: #888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    .obs-step-text strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #e0e0e0;
+      margin-bottom: 2px;
+    }
+
+    .obs-step-text span {
+      font-size: 12px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .obs-tip {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #555;
+      line-height: 1.55;
+    }
+
+    .obs-tip strong { color: #888; }
+
+    .obs-download {
+      display: inline-block;
+      margin-top: 16px;
+      font-size: 12px;
+      color: #444;
+      text-decoration: none;
+    }
+
+    .obs-download:hover { color: #777; }
+  </style>
+  <script type="module" crossorigin src="/assets/index-SJOpGNlT.js"></script>
+</head>
+<body>
+
+  <!-- Consent screen (shown before camera starts) -->
+  <div id="consent-overlay">
+    <div id="consent-card">
+
+      <div class="app-logo">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="32" cy="32" r="20" stroke="white" stroke-width="2.5"/>
+          <circle cx="32" cy="32" r="11" stroke="white" stroke-width="2"/>
+          <circle cx="32" cy="32" r="3.5" fill="white"/>
+          <line x1="32" y1="12" x2="32" y2="8" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <line x1="32" y1="56" x2="32" y2="52" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <line x1="12" y1="32" x2="8" y2="32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <line x1="56" y1="32" x2="52" y2="32" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <h1>Speculum Visus</h1>
+
+      <p class="tagline">
+        A personal lens experience built with Snap Camera Kit.
+        Browse and apply AR lenses live in your browser.
+      </p>
+
+      <div class="perm-list">
+        <div class="perm-item">
+          <span class="perm-icon">&#128247;</span>
+          <span>Camera access is required to apply lenses to your live feed</span>
+        </div>
+        <div class="perm-item">
+          <span class="perm-icon">&#128274;</span>
+          <span>No video is recorded, stored, or transmitted by this app</span>
+        </div>
+      </div>
+
+      <p class="terms-text">
+        By continuing you agree to the
+        <a href="/privacy.html" target="_blank">Privacy Policy</a>
+        and Snap's
+        <a href="https://www.snap.com/terms/snap-camera-kit" target="_blank" rel="noopener">Camera Kit Terms of Service</a>.
+      </p>
+
+      <button id="consent-btn">Get Started</button>
+
+    </div>
+  </div>
+
+  <!-- Camera output -->
+  <canvas id="snap-canvas"></canvas>
+
+  <div id="lens-picker">
+    <button id="clear-lens" title="No lens">&#x2715;</button>
+  </div>
+
+  <button id="ui-toggle" title="Toggle UI (H)">&#x25A4;</button>
+
+  <!-- OBS virtual camera help -->
+  <button id="obs-help-btn" title="Use as virtual camera">?</button>
+
+  <div id="obs-overlay" class="hidden">
+    <div id="obs-card">
+      <div id="obs-card-header">
+        <h2>Virtual Camera Setup</h2>
+        <button id="obs-close">&#x2715;</button>
+      </div>
+      <p class="subtitle">Use Speculum Visus as a webcam in Zoom, Teams, Meet, and more.</p>
+
+      <div class="obs-steps">
+        <div class="obs-step">
+          <div class="obs-step-num">1</div>
+          <div class="obs-step-text">
+            <strong>Open OBS Studio</strong>
+            <span>Free and open source. Download at obsproject.com if you don't have it.</span>
+          </div>
+        </div>
+        <div class="obs-step">
+          <div class="obs-step-num">2</div>
+          <div class="obs-step-text">
+            <strong>Add a Window Capture source</strong>
+            <span>In the Sources panel, click + &rarr; Window Capture, then select this browser window.</span>
+          </div>
+        </div>
+        <div class="obs-step">
+          <div class="obs-step-num">3</div>
+          <div class="obs-step-text">
+            <strong>Start Virtual Camera</strong>
+            <span>Click Start Virtual Camera in the Controls panel (bottom right in OBS).</span>
+          </div>
+        </div>
+        <div class="obs-step">
+          <div class="obs-step-num">4</div>
+          <div class="obs-step-text">
+            <strong>Select it in your video app</strong>
+            <span>In Zoom, Teams, Meet etc., choose <em>OBS Virtual Camera</em> as your camera source.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="obs-tip">
+        <strong>Tip:</strong> Press <strong>H</strong> to hide the lens picker strip before switching
+        to OBS for a clean full-frame capture. Press <strong>H</strong> again to bring it back.
+      </div>
+
+      <a class="obs-download" href="https://obsproject.com" target="_blank" rel="noopener">
+        Download OBS Studio &rarr;
+      </a>
+    </div>
+  </div>
+
+  <div id="status">Starting camera...</div>
+
+</body>
+</html>

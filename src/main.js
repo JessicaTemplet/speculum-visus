@@ -186,11 +186,25 @@ clearBtn.addEventListener('click', clearLens);
 toggleBtn.addEventListener('click', () => togglePicker());
 
 // Consent gate — init only fires after the user accepts the privacy policy
-const overlay  = document.getElementById('consent-overlay');
+const overlay    = document.getElementById('consent-overlay');
 const consentBtn = document.getElementById('consent-btn');
 
 consentBtn.addEventListener('click', () => {
+    consentBtn.disabled = true;
+    consentBtn.textContent = 'Starting…';
     overlay.classList.add('fade-out');
-    overlay.addEventListener('transitionend', () => overlay.remove(), { once: true });
+    // transitionend is unreliable across browsers — use a plain timeout instead
+    setTimeout(() => overlay.remove(), 500);
     init();
+});
+
+// OBS help overlay
+const obsBtn     = document.getElementById('obs-help-btn');
+const obsOverlay = document.getElementById('obs-overlay');
+const obsClose   = document.getElementById('obs-close');
+
+obsBtn.addEventListener('click', () => obsOverlay.classList.remove('hidden'));
+obsClose.addEventListener('click', () => obsOverlay.classList.add('hidden'));
+obsOverlay.addEventListener('click', (e) => {
+    if (e.target === obsOverlay) obsOverlay.classList.add('hidden');
 });

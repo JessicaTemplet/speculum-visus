@@ -282,6 +282,156 @@
     }
 
     #status.hidden { display: none; }
+
+    /* ── OBS help button ─────────────────────────────────── */
+    #obs-help-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(6px);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s ease;
+    }
+
+    #obs-help-btn:hover { background: rgba(255,255,255,0.25); }
+
+    /* ── OBS help overlay ────────────────────────────────── */
+    #obs-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 24px;
+    }
+
+    #obs-overlay.hidden { display: none; }
+
+    #obs-card {
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 20px;
+      padding: 28px;
+      max-width: 420px;
+      width: 100%;
+      color: #fff;
+    }
+
+    #obs-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    #obs-card-header h2 {
+      font-size: 17px;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+
+    #obs-close {
+      background: #1e1e1e;
+      border: none;
+      color: #888;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    #obs-close:hover { color: #fff; background: #2a2a2a; }
+
+    #obs-card .subtitle {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 20px;
+    }
+
+    .obs-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .obs-step {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .obs-step-num {
+      flex-shrink: 0;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #1e1e1e;
+      border: 1px solid #2a2a2a;
+      font-size: 12px;
+      font-weight: 600;
+      color: #888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    .obs-step-text strong {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #e0e0e0;
+      margin-bottom: 2px;
+    }
+
+    .obs-step-text span {
+      font-size: 12px;
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .obs-tip {
+      background: #0d0d0d;
+      border: 1px solid #1a1a1a;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #555;
+      line-height: 1.55;
+    }
+
+    .obs-tip strong { color: #888; }
+
+    .obs-download {
+      display: inline-block;
+      margin-top: 16px;
+      font-size: 12px;
+      color: #444;
+      text-decoration: none;
+    }
+
+    .obs-download:hover { color: #777; }
   </style>
 </head>
 <body>
@@ -340,6 +490,59 @@
   </div>
 
   <button id="ui-toggle" title="Toggle UI (H)">&#x25A4;</button>
+
+  <!-- OBS virtual camera help -->
+  <button id="obs-help-btn" title="Use as virtual camera">?</button>
+
+  <div id="obs-overlay" class="hidden">
+    <div id="obs-card">
+      <div id="obs-card-header">
+        <h2>Virtual Camera Setup</h2>
+        <button id="obs-close">&#x2715;</button>
+      </div>
+      <p class="subtitle">Use Speculum Visus as a webcam in Zoom, Teams, Meet, and more.</p>
+
+      <div class="obs-steps">
+        <div class="obs-step">
+          <div class="obs-step-num">1</div>
+          <div class="obs-step-text">
+            <strong>Open OBS Studio</strong>
+            <span>Free and open source. Download at obsproject.com if you don't have it.</span>
+          </div>
+        </div>
+        <div class="obs-step">
+          <div class="obs-step-num">2</div>
+          <div class="obs-step-text">
+            <strong>Add a Window Capture source</strong>
+            <span>In the Sources panel, click + &rarr; Window Capture, then select this browser window.</span>
+          </div>
+        </div>
+        <div class="obs-step">
+          <div class="obs-step-num">3</div>
+          <div class="obs-step-text">
+            <strong>Start Virtual Camera</strong>
+            <span>Click Start Virtual Camera in the Controls panel (bottom right in OBS).</span>
+          </div>
+        </div>
+        <div class="obs-step">
+          <div class="obs-step-num">4</div>
+          <div class="obs-step-text">
+            <strong>Select it in your video app</strong>
+            <span>In Zoom, Teams, Meet etc., choose <em>OBS Virtual Camera</em> as your camera source.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="obs-tip">
+        <strong>Tip:</strong> Press <strong>H</strong> to hide the lens picker strip before switching
+        to OBS for a clean full-frame capture. Press <strong>H</strong> again to bring it back.
+      </div>
+
+      <a class="obs-download" href="https://obsproject.com" target="_blank" rel="noopener">
+        Download OBS Studio &rarr;
+      </a>
+    </div>
+  </div>
 
   <div id="status">Starting camera...</div>
 
